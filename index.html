@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Анализ диалога · Тактическая эмпатия</title>
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: rgba(0,0,0,0.10);
+    --border2: rgba(0,0,0,0.22);
+    --text: #1a1a18;
+    --muted: #5f5e5a;
+    --hint: #999890;
+    --purple: #7F77DD;
+    --purple-bg: #EEEDFE;
+    --purple-text: #3C3489;
+    --teal: #1D9E75;
+    --teal-bg: #E1F5EE;
+    --teal-text: #085041;
+    --coral: #D85A30;
+    --coral-bg: #FAECE7;
+    --coral-text: #712B13;
+    --blue: #378ADD;
+    --blue-bg: #E6F1FB;
+    --blue-text: #0C447C;
+    --amber: #BA7517;
+    --amber-bg: #FAEEDA;
+    --amber-text: #633806;
+    --green: #639922;
+    --green-bg: #EAF3DE;
+    --green-text: #27500A;
+    --r: 10px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18;
+      --surface: #242422;
+      --surface2: #2c2c29;
+      --border: rgba(255,255,255,0.09);
+      --border2: rgba(255,255,255,0.22);
+      --text: #e8e6de;
+      --muted: #a8a69e;
+      --hint: #6e6c66;
+      --purple-bg: #26215C;
+      --purple-text: #CECBF6;
+      --teal-bg: #04342C;
+      --teal-text: #9FE1CB;
+      --coral-bg: #4A1B0C;
+      --coral-text: #F5C4B3;
+      --blue-bg: #042C53;
+      --blue-text: #B5D4F4;
+      --amber-bg: #412402;
+      --amber-text: #FAC775;
+      --green-bg: #173404;
+      --green-text: #C0DD97;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+  .page { max-width: 740px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  /* Header */
+  .header { margin-bottom: 32px; }
+  .header h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+  .header p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* Section label */
+  .slabel { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--hint); margin: 0 0 8px; }
+
+  /* Card */
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--r); padding: 20px; margin-bottom: 12px; }
+
+  /* Stats row */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+  .stat { background: var(--surface2); border-radius: 8px; padding: 12px; text-align: center; }
+  .stat-n { font-size: 24px; font-weight: 500; color: var(--text); }
+  .stat-l { font-size: 10px; color: var(--hint); margin-top: 2px; }
+
+  /* Textarea */
+  textarea {
+    width: 100%; min-height: 130px; font-family: var(--font); font-size: 13px;
+    resize: vertical; background: var(--surface); border: 0.5px solid var(--border2);
+    border-radius: 8px; padding: 12px 14px; color: var(--text); line-height: 1.6;
+  }
+  textarea:focus { outline: none; border-color: var(--purple); }
+  textarea::placeholder { color: var(--hint); }
+
+  /* Toggles */
+  .toggle-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .toggle {
+    font-size: 12px; padding: 5px 12px; border-radius: 20px;
+    border: 0.5px solid var(--border2); background: transparent;
+    color: var(--muted); cursor: pointer; transition: all .15s; user-select: none;
+  }
+  .toggle:hover { border-color: var(--purple); color: var(--text); }
+  .toggle.on { background: var(--purple-bg); color: var(--purple-text); border-color: var(--purple); }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 500; padding: 10px 20px;
+    border-radius: 8px; border: 0.5px solid var(--border2);
+    background: var(--surface); color: var(--text); cursor: pointer; transition: background .15s;
+  }
+  .btn:hover { background: var(--surface2); }
+  .btn-primary { background: var(--purple); color: #fff; border-color: var(--purple); }
+  .btn-primary:hover { background: #6b63c7; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* Prompt output */
+  .prompt-out { display: none; }
+  .prompt-box {
+    background: var(--surface2); border: 0.5px solid var(--border);
+    border-radius: 8px; padding: 16px; font-size: 13px;
+    line-height: 1.8; white-space: pre-wrap; font-family: var(--font);
+    color: var(--text); max-height: 320px; overflow-y: auto;
+  }
+  .copy-btn {
+    margin-top: 8px; font-size: 11px; padding: 4px 12px;
+    border: 0.5px solid var(--border2); background: transparent;
+    color: var(--muted); border-radius: 6px; cursor: pointer;
+  }
+  .copy-btn:hover { background: var(--surface2); }
+
+  /* Result */
+  .result-out { display: none; margin-top: 24px; }
+  .result-box {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--r); padding: 20px; font-size: 14px;
+    line-height: 1.8; color: var(--text); white-space: pre-wrap;
+  }
+  .result-box.loading { color: var(--hint); font-style: italic; }
+
+  /* Divider */
+  hr { border: none; border-top: 0.5px solid var(--border); margin: 28px 0; }
+
+  /* Extra ideas */
+  .ideas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media(max-width: 520px) { .ideas-grid { grid-template-columns: 1fr; } }
+  .idea-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--r); padding: 14px 16px; cursor: pointer;
+    transition: border-color .15s;
+  }
+  .idea-card:hover { border-color: var(--purple); }
+  .idea-card h4 { font-size: 13px; font-weight: 500; margin-bottom: 4px; color: var(--text); }
+  .idea-card p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .idea-tag { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; margin-top: 8px; }
+
+  /* API key section */
+  .apikey-section { background: var(--amber-bg); border: 0.5px solid var(--amber); border-radius: var(--r); padding: 16px; margin-bottom: 20px; }
+  .apikey-section p { font-size: 12px; color: var(--amber-text); margin-bottom: 8px; line-height: 1.6; }
+  .apikey-section input {
+    width: 100%; font-size: 13px; padding: 8px 12px; border-radius: 6px;
+    border: 0.5px solid var(--amber); background: var(--surface);
+    color: var(--text); font-family: var(--font-mono, monospace);
+  }
+  .apikey-section input:focus { outline: none; }
+
+  .accent { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <h1>Анализ диалога</h1>
+    <p>Инструмент для разбора транскрипций по методам тактической эмпатии.<br>Вставь фрагмент диалога — получи детальный разбор.</p>
+  </div>
+
+  <!-- API KEY -->
+  <div class="apikey-section">
+    <p><strong>Для прямого анализа</strong> введи свой Anthropic API ключ (хранится только в этой вкладке, никуда не отправляется). Получить ключ: <a href="https://console.anthropic.com" target="_blank" style="color: var(--amber-text);">console.anthropic.com</a><br>
+    Или используй кнопку <strong>«Собрать промпт»</strong> и вставь его в любой чат с Claude — API ключ не нужен.</p>
+    <input type="password" id="api-key" placeholder="sk-ant-..." autocomplete="off" />
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat"><div class="stat-n" id="cnt-tech">9</div><div class="stat-l">техник выбрано</div></div>
+    <div class="stat"><div class="stat-n" id="cnt-focus">4</div><div class="stat-l">областей анализа</div></div>
+    <div class="stat"><div class="stat-n" id="cnt-chars">0</div><div class="stat-l">символов диалога</div></div>
+  </div>
+
+  <!-- TRANSCRIPT -->
+  <div class="card">
+    <div class="slabel">1. Вставь фрагмент транскрипции</div>
+    <textarea id="transcript" placeholder="А: Я не уверен, что это сработает...&#10;Б: Не уверен, что сработает?&#10;А: Ну да, мы уже пробовали похожее...&#10;&#10;Достаточно 5–15 реплик." oninput="updateStats()"></textarea>
+  </div>
+
+  <!-- TECHNIQUES -->
+  <div class="card">
+    <div class="slabel">2. Техники для оценки</div>
+    <div class="toggle-row" id="tech-row">
+      <span class="toggle on" data-val="mirroring">Зеркалирование</span>
+      <span class="toggle on" data-val="labeling">Лейбелинг</span>
+      <span class="toggle on" data-val="calibrated">Калибровочные вопросы</span>
+      <span class="toggle on" data-val="no_oriented">No-ориентированные вопросы</span>
+      <span class="toggle on" data-val="accusation_audit">Аккузационный аудит</span>
+      <span class="toggle on" data-val="silence">Тактическое молчание</span>
+      <span class="toggle on" data-val="tone">Интонация / голос</span>
+      <span class="toggle on" data-val="thats_right">«Именно!» — сигнал доверия</span>
+      <span class="toggle on" data-val="first_positive">Первый позитив</span>
+    </div>
+  </div>
+
+  <!-- FOCUS -->
+  <div class="card">
+    <div class="slabel">3. Области анализа</div>
+    <div class="toggle-row" id="focus-row">
+      <span class="toggle on" data-val="what_worked">Что сработало</span>
+      <span class="toggle on" data-val="missed">Упущенные возможности</span>
+      <span class="toggle on" data-val="rewrite">Альтернативные реплики</span>
+      <span class="toggle on" data-val="emotions">Эмоциональная динамика</span>
+      <span class="toggle" data-val="resistance">Сопротивление собеседника</span>
+      <span class="toggle" data-val="turning_points">Переломные моменты</span>
+    </div>
+  </div>
+
+  <!-- BUTTONS -->
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="runAnalysis()">▶ Анализировать</button>
+    <button class="btn" onclick="buildAndShowPrompt()">⬡ Собрать промпт</button>
+  </div>
+
+  <!-- PROMPT OUTPUT -->
+  <div class="prompt-out" id="prompt-out">
+    <div class="slabel">Готовый промпт — вставь в Claude</div>
+    <div class="prompt-box" id="prompt-text"></div>
+    <button class="copy-btn" onclick="copyPrompt()">Скопировать промпт</button>
+  </div>
+
+  <!-- RESULT OUTPUT -->
+  <div class="result-out" id="result-out">
+    <div class="slabel">Результат анализа</div>
+    <div class="result-box" id="result-box"></div>
+  </div>
+
+  <hr>
+
+  <!-- EXTRA IDEAS -->
+  <div class="slabel">Дополнительные инструменты</div>
+  <div class="ideas-grid">
+    <div class="idea-card" onclick="loadIdea('roleplay')">
+      <h4>🎭 Ролевая тренировка</h4>
+      <p>ИИ играет сопротивляющегося собеседника. Отрабатываешь техники в реальном времени.</p>
+      <span class="idea-tag" style="background:var(--purple-bg);color:var(--purple-text);">live practice</span>
+    </div>
+    <div class="idea-card" onclick="loadIdea('diary')">
+      <h4>📓 Дневник переговорщика</h4>
+      <p>Еженедельная рефлексия по одному разговору. Отслеживание прогресса в динамике.</p>
+      <span class="idea-tag" style="background:var(--teal-bg);color:var(--teal-text);">weekly</span>
+    </div>
+    <div class="idea-card" onclick="loadIdea('error')">
+      <h4>🔍 Разбор ошибки</h4>
+      <p>Структура для момента, когда контакт был потерян. Что пошло не так и как исправить.</p>
+      <span class="idea-tag" style="background:var(--coral-bg);color:var(--coral-text);">error analysis</span>
+    </div>
+    <div class="idea-card" onclick="loadIdea('prep')">
+      <h4>🎯 Подготовка к разговору</h4>
+      <p>Аккузационный аудит заранее, прогноз эмоций, список калибровочных вопросов.</p>
+      <span class="idea-tag" style="background:var(--blue-bg);color:var(--blue-text);">pre-call prep</span>
+    </div>
+    <div class="idea-card" onclick="loadIdea('empathy_vs_sympathy')">
+      <h4>⚖️ Симпатия vs эмпатия</h4>
+      <p>Разбор конкретной реплики: одна версия закрывает, другая открывает — и почему.</p>
+      <span class="idea-tag" style="background:var(--amber-bg);color:var(--amber-text);">comparison</span>
+    </div>
+    <div class="idea-card" onclick="loadIdea('tracker')">
+      <h4>📈 Месячный трекер</h4>
+      <p>Еженедельные транскрипции → сравнение в динамике → где вырос, где ещё западает.</p>
+      <span class="idea-tag" style="background:var(--green-bg);color:var(--green-text);">progress tracking</span>
+    </div>
+  </div>
+
+  <hr>
+  <p style="font-size:11px; color:var(--hint); text-align:center;">Инструмент основан на методологии тактической эмпатии · переговорный подход ФБР</p>
+
+</div>
+
+<script>
+const techLabels = {
+  mirroring: 'зеркалирование (повторение 1–3 ключевых слов с вопросительной интонацией)',
+  labeling: 'лейбелинг (вербализация эмоций: «Кажется...», «Похоже...», «Звучит как...»)',
+  calibrated: 'калибровочные вопросы (открытые вопросы на «Что» и «Как», никогда «Почему»)',
+  no_oriented: 'No-ориентированные вопросы (вопросы, где «нет» = согласие)',
+  accusation_audit: 'аккузационный аудит (проговаривание возможных возражений вперёд)',
+  silence: 'тактическое молчание (пауза после зеркала или лейбела)',
+  tone: 'интонация и голос (FM-диджей / позитивный / прямой)',
+  thats_right: 'сигнал доверия — «Именно!» / «Точно так» / «Да, всё верно»',
+  first_positive: 'правило первого позитива (начало диалога на позитивной ноте)',
+};
+
+const focusLabels = {
+  what_worked: 'Что сработало: укажи конкретные моменты, где техника была применена точно, объясни почему это сработало.',
+  missed: 'Упущенные возможности: найди реплики, где можно было применить технику — но не применили. Процитируй реплику и объясни какую технику и почему.',
+  rewrite: 'Альтернативные реплики: перепиши 3–5 моих реплик так, как они звучали бы с тактической эмпатией. Покажи: оригинал → улучшенная версия → объяснение изменения.',
+  emotions: 'Эмоциональная динамика: опиши как менялось эмоциональное состояние собеседника по ходу разговора. Где он открывался, где закрывался.',
+  resistance: 'Сопротивление: найди моменты, где собеседник сопротивлялся. Что к этому привело и как снизить напряжение.',
+  turning_points: 'Переломные моменты: найди 1–3 точки, где разговор изменил направление и объясни причину.',
+};
+
+const ideaPrompts = {
+  roleplay: `Ты — опытный переговорщик, который играет роль сопротивляющегося собеседника для тренировки тактической эмпатии.\n\nПравила:\n- Ты играешь конкретного человека в конкретной ситуации (её описываю я)\n- Ты создаёшь реалистичное сопротивление: возражения, закрытость, скептицизм\n- После каждых 3–4 реплик делаешь короткую паузу и даёшь мне фидбек: что я сделал правильно, что упустил\n- Оцениваешь точность техник по шкале 1–5\n\nСитуация для тренировки: [опиши ситуацию — например, «переговоры с клиентом о цене» или «разговор с сотрудником о дедлайне»]\n\nНачни сцену.`,
+  diary: `Ты — коуч по тактической эмпатии. Веди со мной еженедельный дневник переговорщика.\n\nКаждую неделю я присылаю тебе:\n1. Один реальный разговор (кратко, своими словами)\n2. Оценку себя по шкале 1–10\n\nТы:\n- Выявляешь 1–2 момента, где я применил технику (или мог применить)\n- Называешь конкретную технику с объяснением\n- Даёшь одно упражнение на неделю\n- Если это не первая запись — сравниваешь с предыдущей и показываешь динамику\n\nНачнём: вот мой разговор этой недели:\n[опиши разговор]`,
+  error: `Я потерял контакт с человеком в разговоре и хочу разобрать что пошло не так.\n\nСтруктура разбора:\n1. Точка потери контакта — какая именно реплика или момент переломил ситуацию\n2. Что происходило в этот момент у собеседника (предположительно)\n3. Что я сделал и почему это закрыло собеседника\n4. Три альтернативных варианта как можно было ответить\n5. Как восстановить контакт в следующий раз если это повторится\n\nВот что произошло:\n[опиши ситуацию]`,
+  prep: `Помоги мне подготовиться к сложному разговору по методу тактической эмпатии.\n\nЧто мне нужно:\n1. Аккузационный аудит: перечисли всё негативное, что собеседник может думать обо мне или ситуации — чтобы я мог проговорить это первым\n2. Прогноз эмоционального состояния: в каком состоянии, вероятно, будет собеседник и почему\n3. 5 калибровочных вопросов (на «Что» и «Как») для этого разговора\n4. Одна фраза для открытия разговора на позитивной ноте\n\nРазговор:\n[опиши с кем и о чём предстоит говорить]`,
+  empathy_vs_sympathy: `Разбери конкретную мою реплику: покажи разницу между симпатией и эмпатией на практике.\n\nФормат:\n— Моя реплика: [впиши реплику]\n— Контекст: [кратко что происходило]\n\nДай мне:\n1. Версия с симпатией — как звучит, что происходит с собеседником, почему это может закрыть его\n2. Версия с эмпатией — как звучит, что происходит с собеседником, почему это открывает\n3. Ключевое различие в одном предложении\n4. Формула: как перестроить любую реплику с симпатии на эмпатию`,
+  tracker: `Ты ведёшь мой месячный трекер развития тактической эмпатии.\n\nКаждую неделю я присылаю транскрипцию или описание разговора. Ты:\n- Оцениваешь 5 навыков по шкале 1–5: зеркалирование, лейбелинг, калибровочные вопросы, аккузационный аудит, управление тишиной\n- Сравниваешь с предыдущей неделей (если есть)\n- Выявляешь один растущий навык и один западающий\n- Даёшь фокус на следующую неделю — один конкретный навык и одно упражнение\n\nНеделя 1. Вот мой разговор:\n[опиши разговор или вставь транскрипцию]`,
+};
+
+document.querySelectorAll('.toggle').forEach(t => {
+  t.addEventListener('click', () => { t.classList.toggle('on'); updateStats(); });
+});
+
+function updateStats() {
+  const t = document.getElementById('transcript').value;
+  document.getElementById('cnt-chars').textContent = t.length;
+  document.getElementById('cnt-tech').textContent = document.querySelectorAll('#tech-row .toggle.on').length;
+  document.getElementById('cnt-focus').textContent = document.querySelectorAll('#focus-row .toggle.on').length;
+}
+
+function buildPrompt() {
+  const transcript = document.getElementById('transcript').value.trim();
+  const activeTech = [...document.querySelectorAll('#tech-row .toggle.on')].map(t => techLabels[t.dataset.val]).filter(Boolean);
+  const activeFocus = [...document.querySelectorAll('#focus-row .toggle.on')].map(t => focusLabels[t.dataset.val]).filter(Boolean);
+
+  const techSection = activeTech.length ? `Техники для оценки:\n${activeTech.map((t,i) => `${i+1}. ${t}`).join('\n')}` : '';
+  const focusSection = activeFocus.length ? `Области анализа:\n${activeFocus.map((f,i) => `${i+1}. ${f}`).join('\n\n')}` : '';
+  const transcriptSection = transcript ? `Транскрипция:\n---\n${transcript}\n---` : `Транскрипция:\n---\n[вставь свой диалог здесь]\n---`;
+
+  return `Ты — специалист по тактической эмпатии. Твоя задача — дать детальный, конкретный разбор моего диалога.
+
+Не давай общих советов. Работай только с тем, что есть в тексте. Цитируй мои реплики, когда делаешь замечания. Пиши как коуч — прямо, без лишних комплиментов.
+
+${techSection}
+
+${focusSection}
+
+Формат ответа:
+- Раздел для каждой области анализа с заголовком
+- Конкретные примеры из текста (цитаты)
+- Оценка точности применения техник по шкале 1–5
+- Завершить: один главный вывод и одно упражнение на следующую неделю
+
+${transcriptSection}`;
+}
+
+function buildAndShowPrompt() {
+  const p = buildPrompt();
+  document.getElementById('prompt-text').textContent = p;
+  document.getElementById('prompt-out').style.display = 'block';
+  document.getElementById('prompt-out').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function copyPrompt() {
+  const text = document.getElementById('prompt-text').textContent;
+  navigator.clipboard.writeText(text).catch(() => {});
+  const btn = document.querySelector('.copy-btn');
+  btn.textContent = 'Скопировано ✓';
+  setTimeout(() => btn.textContent = 'Скопировать промпт', 2000);
+}
+
+async function runAnalysis() {
+  const apiKey = document.getElementById('api-key').value.trim();
+  const transcript = document.getElementById('transcript').value.trim();
+
+  if (!transcript) { alert('Вставь транскрипцию диалога'); return; }
+  if (!apiKey) {
+    buildAndShowPrompt();
+    alert('API ключ не введён — показан готовый промпт для вставки в Claude');
+    return;
+  }
+
+  const prompt = buildPrompt();
+  const resultOut = document.getElementById('result-out');
+  const resultBox = document.getElementById('result-box');
+
+  resultOut.style.display = 'block';
+  resultBox.className = 'result-box loading';
+  resultBox.textContent = 'Анализирую диалог...';
+  resultOut.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || 'Ошибка API');
+    }
+
+    const data = await res.json();
+    const text = data.content.map(b => b.text || '').join('');
+    resultBox.className = 'result-box';
+    resultBox.textContent = text;
+  } catch (e) {
+    resultBox.className = 'result-box';
+    resultBox.textContent = 'Ошибка: ' + e.message + '\n\nПроверь API ключ или используй кнопку «Собрать промпт».';
+  }
+}
+
+function loadIdea(key) {
+  const p = ideaPrompts[key];
+  if (!p) return;
+  document.getElementById('transcript').value = '';
+  document.getElementById('prompt-text').textContent = p;
+  document.getElementById('prompt-out').style.display = 'block';
+  document.getElementById('prompt-out').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  updateStats();
+}
+</script>
+</body>
+</html>
